@@ -6,7 +6,8 @@ const loading = ref(true)
 
 onMounted(async () => {
   try {
-    const response = await fetch('/problems.json')
+    const base = import.meta.env.BASE_URL
+    const response = await fetch(base + 'problems.json')
     const data = await response.json()
     problems.value = data.problems
   } catch (e) {
@@ -18,7 +19,8 @@ onMounted(async () => {
 
 const openNote = (problem) => {
   const encoded = encodeURIComponent(JSON.stringify(problem))
-  window.location.href = `/note?problem=${encoded}`
+  const base = import.meta.env.BASE_URL
+  window.location.href = base + 'note?problem=' + encoded
 }
 </script>
 
