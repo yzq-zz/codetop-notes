@@ -1,0 +1,13 @@
+{
+  "name": "codetop-notes",
+  "version": "1.0.0",
+  "description": "刷题笔记网站，支持 GitHub Gist 持久化",
+  "scripts": {
+    "dev": "vitepress dev docs",
+    "build": "vitepress build docs",
+    "preview": "vitepress preview docs"
+  },
+  "devDependencies": {
+    "vitepress": "^1.0.0"
+  }
+}
