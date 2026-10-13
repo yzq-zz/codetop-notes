@@ -6,7 +6,7 @@ const loading = ref(true)
 
 onMounted(async () => {
   try {
-    const response = await fetch('./problems.json')
+    const response = await fetch('/problems.json')
     const data = await response.json()
     problems.value = data.problems
   } catch (e) {
