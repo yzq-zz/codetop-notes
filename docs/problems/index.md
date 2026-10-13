@@ -81,7 +81,7 @@ const problems = ref([
 
 const openNote = (problem) => {
   const encoded = encodeURIComponent(JSON.stringify(problem))
-  window.location.href = '/codetop-notes/note?problem=' + encoded
+  window.location.href = '/note?problem=' + encoded
 }
 </script>
 

@@ -16,6 +16,7 @@ export default defineConfig({
     ['script', { src: 'https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/sql/sql.js' }]
   ],
   themeConfig: {
+    siteUrl: 'https://yzq-zz.github.io/codetop-notes/',
     nav: [
       { text: '首页', link: '/' },
       { text: '题目列表', link: '/problems/' }
