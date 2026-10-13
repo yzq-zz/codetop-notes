@@ -8,7 +8,7 @@ hero:
   actions:
     - theme: brand
       text: 查看题目列表
-      link: /problems/
+      link: /codetop-notes/problems/
 ---
 
 ## 功能说明
