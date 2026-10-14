@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed, watch, nextTick, onBeforeUnmount } from 'vue'
+import { ref, onMounted, computed, nextTick, onBeforeUnmount } from 'vue'
 import { EditorState } from '@codemirror/state'
 import { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightSpecialChars, drawSelection, dropCursor, highlightActiveLine } from '@codemirror/view'
 import { defaultHighlightStyle, syntaxHighlighting, indentOnInput, bracketMatching } from '@codemirror/language'
@@ -59,14 +59,25 @@ onMounted(async () => {
   // 加载 Token
   token.value = localStorage.getItem(TOKEN_KEY) || ''
   loaded.value = true
-  loadNote()
   
   // 点击其他地方关闭右键菜单
   document.addEventListener('click', closeContextMenu)
+  
+  loadNote()
+  
+  // 确保 DOM 渲染后初始化编辑器
+  setTimeout(() => {
+    if (editorContainer.value && !editorView.value) {
+      initEditor(content.value || '# 欢迎使用刷题笔记\n\n请先输入 GitHub Token 开始使用。')
+    }
+  }, 100)
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', closeContextMenu)
+  if (editorView.value) {
+    editorView.value.destroy()
+  }
 })
 
 // 初始化 CodeMirror 编辑器
@@ -177,11 +188,9 @@ async function loadNote() {
       const data = await response.json()
       content.value = atob(data.content.replace(/\n/g, ''))
       showStatus('笔记加载成功')
-      nextTick(() => initEditor(content.value))
     } else if (response.status === 404) {
       content.value = `# ${props.problem.title} 笔记\n\n## 思路\n\n\n\n## 代码\n\n\`\`\`java\n\n\`\`\`\n\n## 总结\n\n`
       showStatus('新建笔记')
-      nextTick(() => initEditor(content.value))
     } else {
       showStatus('加载失败', 'error')
     }
@@ -274,7 +283,7 @@ function showStatus(msg, type = '') {
     
     <p v-if="status" :style="{ color: statusType === 'error' ? 'red' : 'green' }">{{ status }}</p>
     
-    <div class="editor-area">
+    <div v-if="loaded" class="editor-area">
       <div class="editor-pane">
         <div class="pane-header">编辑</div>
         <div class="editor-wrapper" ref="editorContainer"></div>
