@@ -10,7 +10,6 @@ const token = ref('')
 const loaded = ref(false)
 
 const CONFIG_GIST_FILE = 'codetop-config.json'
-const DEFAULT_CONFIG_GIST_ID = 'fc8f728b94e65b97145e1de1354ff781' // 默认配置 Gist
 const GIST_ID_KEY = 'codetop_gist_id'
 const GIST_FILENAME = '刷题笔记.md'
 
@@ -33,31 +32,9 @@ onMounted(async () => {
 
 async function loadConfig() {
   const savedToken = localStorage.getItem('codetop_token')
-  const savedConfigGistId = localStorage.getItem('codetop_config_gist_id') || DEFAULT_CONFIG_GIST_ID
-
   if (savedToken) {
     token.value = savedToken
     return
-  }
-
-  // 从配置 Gist 读取
-  try {
-    const response = await fetch(`https://api.github.com/gists/${savedConfigGistId}`)
-    if (response.ok) {
-      const gist = await response.json()
-      const configFile = gist.files[CONFIG_GIST_FILE]
-      if (configFile) {
-        const config = JSON.parse(configFile.content)
-        if (config.token) {
-          token.value = config.token
-          localStorage.setItem('codetop_token', config.token)
-          localStorage.setItem('codetop_config_gist_id', savedConfigGistId)
-          return
-        }
-      }
-    }
-  } catch (e) {
-    console.error('加载配置失败:', e)
   }
 }
 
