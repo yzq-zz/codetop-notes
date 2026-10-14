@@ -1,16 +1,15 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 
-const GITHUB_TOKEN_KEY = 'codetop_github_token'
-const GIST_ID_KEY = 'codetop_gist_id'
-const GIST_FILENAME = '刷题笔记.md'
-
 const problem = ref(null)
-const token = ref('')
 const content = ref('')
 const status = ref('')
 const statusType = ref('')
 const saving = ref(false)
+const token = ref('')
+const GITHUB_TOKEN_KEY = 'codetop_github_token'
+const GIST_ID_KEY = 'codetop_gist_id'
+const GIST_FILENAME = '刷题笔记.md'
 
 onMounted(() => {
   const params = new URLSearchParams(window.location.search)
@@ -22,7 +21,6 @@ onMounted(() => {
       console.error('解析题目失败:', e)
     }
   }
-
   token.value = localStorage.getItem(GITHUB_TOKEN_KEY) || ''
   loadNote()
 })
@@ -79,7 +77,6 @@ async function saveNote() {
     showStatus('请先输入 GitHub Token', 'error')
     return
   }
-
   if (!problem.value) {
     showStatus('题目信息丢失', 'error')
     return
@@ -138,128 +135,75 @@ async function saveNote() {
     saving.value = false
   }
 }
-
-function insertCode() {
-  const textarea = document.getElementById('noteEditor')
-  const start = textarea.selectionStart
-  const end = textarea.selectionEnd
-  const lang = document.getElementById('langSelect')?.value || 'java'
-  const before = content.value.substring(0, start)
-  const after = content.value.substring(end)
-  const code = `\n\`\`\`${lang}\n\n\`\`\`\n`
-  content.value = before + code + after
-  setTimeout(() => {
-    textarea.focus()
-    textarea.setSelectionRange(start + 4, start + 4 + lang.length)
-  }, 0)
-}
-
-function insertBold() {
-  const textarea = document.getElementById('noteEditor')
-  const start = textarea.selectionStart
-  const end = textarea.selectionEnd
-  const selected = content.value.substring(start, end)
-  const before = content.value.substring(0, start)
-  const after = content.value.substring(end)
-  if (selected) {
-    content.value = before + '**' + selected + '**' + after
-  } else {
-    content.value = before + '****' + after
-  }
-}
 </script>
 
 <template>
-  <div class="note-page">
-    <div class="header">
-      <div class="problem-info">
-        <span v-if="problem">#{{ problem.id }} {{ problem.title }}</span>
-        <span v-else>加载中...</span>
-        <a v-if="problem" :href="problem.link" target="_blank" class="link-btn">力扣链接</a>
-      </div>
-      <div class="token-section">
+  <div class="note-container">
+    <div class="note-header">
+      <h1 v-if="problem">#{{ problem.id }} {{ problem.title }}</h1>
+      <h1 v-else>加载中...</h1>
+      <a v-if="problem" :href="problem.link" target="_blank" class="link-btn">力扣链接</a>
+    </div>
+
+    <div class="note-content">
+      <div class="token-row">
         <label>GitHub Token:</label>
-        <input 
-          type="password" 
-          v-model="token" 
-          placeholder="ghp_xxx"
-          @change="localStorage.setItem(GITHUB_TOKEN_KEY, token)"
-        >
+        <input type="password" v-model="token" placeholder="ghp_xxx" @change="localStorage.setItem(GITHUB_TOKEN_KEY, token)" />
         <button class="save-btn" @click="saveNote" :disabled="saving">
           {{ saving ? '保存中...' : '保存笔记' }}
         </button>
       </div>
+
+      <div v-if="status" :class="['status', statusType]">{{ status }}</div>
+
+      <textarea v-model="content" class="editor" placeholder="在这里写笔记..." spellcheck="false"></textarea>
     </div>
-
-    <div v-if="status" :class="['status', statusType]">{{ status }}</div>
-
-    <div class="toolbar">
-      <button type="button" class="tool-btn" @click="insertCode">插入代码块</button>
-      <button type="button" class="tool-btn" @click="insertBold">加粗</button>
-      <select id="langSelect" class="lang-select">
-        <option value="java">Java</option>
-        <option value="python">Python</option>
-        <option value="cpp">C++</option>
-        <option value="javascript">JavaScript</option>
-        <option value="go">Go</option>
-        <option value="sql">SQL</option>
-      </select>
-    </div>
-
-    <textarea 
-      id="noteEditor"
-      v-model="content"
-      class="editor"
-      placeholder="在这里写笔记..."
-      spellcheck="false"
-    ></textarea>
   </div>
 </template>
 
 <style scoped>
-.note-page {
-  height: calc(100vh - 120px);
-  display: flex;
-  flex-direction: column;
-  padding: 1rem;
-  max-width: 1200px;
+.note-container {
+  max-width: 1000px;
   margin: 0 auto;
+  padding: 2rem;
 }
 
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.problem-info {
-  font-size: 1.2rem;
+.note-header {
   display: flex;
   align-items: center;
   gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.note-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
 }
 
 .link-btn {
-  font-size: 0.9rem;
   color: var(--vp-c-brand);
+  text-decoration: none;
+  font-size: 0.9rem;
 }
 
-.token-section {
+.note-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.token-row {
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-.token-section label {
+.token-row label {
   color: var(--vp-c-text-2);
   font-size: 0.9rem;
 }
 
-.token-section input {
-  width: 280px;
+.token-row input {
   padding: 0.5rem;
   background: var(--vp-c-bg-soft);
   border: 1px solid var(--vp-c-divider);
@@ -267,6 +211,7 @@ function insertBold() {
   color: var(--vp-c-text);
   font-family: monospace;
   font-size: 0.85rem;
+  width: 280px;
 }
 
 .save-btn {
@@ -284,10 +229,9 @@ function insertBold() {
 }
 
 .status {
-  text-align: center;
   padding: 0.5rem;
-  margin-bottom: 0.5rem;
   border-radius: 4px;
+  text-align: center;
 }
 
 .status.success {
@@ -300,44 +244,15 @@ function insertBold() {
   color: #e57373;
 }
 
-.toolbar {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.tool-btn {
-  padding: 0.4rem 0.8rem;
-  background: var(--vp-c-bg-soft);
-  border: 1px solid var(--vp-c-divider);
-  color: var(--vp-c-text);
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.tool-btn:hover {
-  background: var(--vp-c-bg);
-  border-color: var(--vp-c-brand);
-}
-
-.lang-select {
-  padding: 0.4rem 0.8rem;
-  background: var(--vp-c-bg-soft);
-  border: 1px solid var(--vp-c-divider);
-  color: var(--vp-c-text);
-  border-radius: 4px;
-  cursor: pointer;
-}
-
 .editor {
-  flex: 1;
-  min-height: 400px;
+  width: 100%;
+  height: 500px;
   padding: 1rem;
   background: var(--vp-c-bg-soft);
   border: 1px solid var(--vp-c-divider);
   border-radius: 8px;
   color: var(--vp-c-text);
-  font-family: 'Fira Code', 'Consolas', monospace;
+  font-family: 'Fira Code', Consolas, monospace;
   font-size: 0.95rem;
   line-height: 1.6;
   resize: vertical;

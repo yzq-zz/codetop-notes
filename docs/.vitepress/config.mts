@@ -8,6 +8,9 @@ export default defineConfig({
   head: [
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }]
   ],
+  markdown: {
+    lineNumbers: false
+  },
   themeConfig: {
     siteUrl: 'https://yzq-zz.github.io/codetop-notes/',
     nav: [
