@@ -11,6 +11,7 @@ export default defineConfig({
   markdown: {
     lineNumbers: false
   },
+  ssr: false,
   themeConfig: {
     siteUrl: 'https://yzq-zz.github.io/codetop-notes/',
     nav: [
