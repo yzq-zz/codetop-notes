@@ -7,12 +7,13 @@ const status = ref('')
 const statusType = ref('')
 const saving = ref(false)
 const token = ref('')
+const loaded = ref(false)
 
-const GITHUB_TOKEN_KEY = 'codetop_github_token'
+const CONFIG_GIST_FILE = 'codetop-config.json'
 const GIST_ID_KEY = 'codetop_gist_id'
 const GIST_FILENAME = '刷题笔记.md'
 
-onMounted(() => {
+onMounted(async () => {
   const params = new URLSearchParams(window.location.search)
   const problemData = params.get('problem')
   if (problemData) {
@@ -22,9 +23,82 @@ onMounted(() => {
       console.error('解析题目失败:', e)
     }
   }
-  token.value = localStorage.getItem(GITHUB_TOKEN_KEY) || ''
+
+  // 尝试从配置 Gist 加载 Token
+  await loadConfig()
+  loaded.value = true
   loadNote()
 })
+
+async function loadConfig() {
+  const savedToken = localStorage.getItem('codetop_token')
+  const savedConfigGistId = localStorage.getItem('codetop_config_gist_id')
+
+  if (savedToken) {
+    token.value = savedToken
+    return
+  }
+
+  // 尝试从配置 Gist 读取
+  if (savedConfigGistId) {
+    try {
+      const response = await fetch(`https://api.github.com/gists/${savedConfigGistId}`)
+      if (response.ok) {
+        const gist = await response.json()
+        const configFile = gist.files[CONFIG_GIST_FILE]
+        if (configFile) {
+          const config = JSON.parse(configFile.content)
+          if (config.token) {
+            token.value = config.token
+            localStorage.setItem('codetop_token', config.token)
+            return
+          }
+        }
+      }
+    } catch (e) {
+      console.error('加载配置失败:', e)
+    }
+  }
+}
+
+async function saveConfig() {
+  if (!token.value) return
+
+  const savedConfigGistId = localStorage.getItem('codetop_config_gist_id')
+  const configData = {
+    token: token.value
+  }
+
+  try {
+    const url = savedConfigGistId
+      ? `https://api.github.com/gists/${savedConfigGistId}`
+      : 'https://api.github.com/gists'
+    const method = savedConfigGistId ? 'PATCH' : 'POST'
+
+    const response = await fetch(url, {
+      method,
+      headers: {
+        'Authorization': `token ${token.value}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        description: 'codetop-notes 配置',
+        public: false,
+        files: { [CONFIG_GIST_FILE]: { content: JSON.stringify(configData) } }
+      })
+    })
+
+    if (response.ok) {
+      const gist = await response.json()
+      if (!savedConfigGistId) {
+        localStorage.setItem('codetop_config_gist_id', gist.id)
+      }
+      localStorage.setItem('codetop_token', token.value)
+    }
+  } catch (e) {
+    console.error('保存配置失败:', e)
+  }
+}
 
 async function loadNote() {
   if (!token.value) {
@@ -56,9 +130,11 @@ async function loadNote() {
 
 async function saveNote() {
   if (!token.value || !problem.value) return
-  localStorage.setItem(GITHUB_TOKEN_KEY, token.value)
   saving.value = true
   showStatus('保存中...')
+
+  // 保存 Token 配置
+  await saveConfig()
 
   const gistId = localStorage.getItem(GIST_ID_KEY + '_' + problem.value.id)
   const gistData = {
@@ -103,10 +179,10 @@ function showStatus(msg, type = '') {
   <div>
     <h1 v-if="problem">#{{ problem.id }} {{ problem.title }}</h1>
     <p v-if="problem"><a :href="problem.link" target="_blank">力扣链接</a></p>
-    <p v-else>加载中...</p>
+    <p v-else-if="!loaded">加载中...</p>
     <p>
-      <label>GitHub Token: <input type="password" v-model="token" @change="localStorage.setItem(GITHUB_TOKEN_KEY, token)" /></label>
-      <button @click="saveNote" :disabled="saving">{{ saving ? '保存中...' : '保存笔记' }}</button>
+      <label>GitHub Token: <input type="password" v-model="token" placeholder="输入 Token..." /></label>
+      <button @click="saveNote" :disabled="saving || !loaded">{{ saving ? '保存中...' : '保存笔记' }}</button>
     </p>
     <p v-if="status" :style="{ color: statusType === 'error' ? 'red' : 'green' }">{{ status }}</p>
     <textarea v-model="content" rows="20" style="width: 100%; font-family: monospace;"></textarea>
