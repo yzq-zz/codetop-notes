@@ -12,7 +12,38 @@ const status = ref('')
 const statusType = ref('')
 const saving = ref(false)
 const editorRef = ref(null)
+const codemirrorLoaded = ref(false)
 let editor = null
+
+// 动态加载 CodeMirror
+async function loadCodeMirror() {
+  if (window.CodeMirror) {
+    codemirrorLoaded.value = true
+    return
+  }
+
+  const scripts = [
+    'https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js',
+    'https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/markdown/markdown.js',
+    'https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/clike/clike.js',
+    'https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/python/python.js',
+    'https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/javascript/javascript.js',
+    'https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/go/go.js',
+    'https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/sql/sql.js'
+  ]
+
+  for (const src of scripts) {
+    await new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = src
+      script.onload = resolve
+      script.onerror = reject
+      document.head.appendChild(script)
+    })
+  }
+
+  codemirrorLoaded.value = true
+}
 
 // 加载题目信息
 onMounted(async () => {
@@ -29,10 +60,13 @@ onMounted(async () => {
   // 加载已保存的 token
   token.value = localStorage.getItem(GITHUB_TOKEN_KEY) || ''
 
+  // 动态加载 CodeMirror
+  await loadCodeMirror()
+
   // 加载笔记
   await loadNote()
 
-  // 初始化 CodeMirror
+  // 初始化 CodeMirror 编辑器
   await nextTick()
   initEditor()
   if (content.value) {
@@ -42,11 +76,14 @@ onMounted(async () => {
 
 // 初始化编辑器
 function initEditor() {
-  const CodeMirror = window.CodeMirror
-  editor = CodeMirror(editorRef.value, {
-    value: content.value,
+  if (!editorRef.value || !window.CodeMirror) {
+    console.error('CodeMirror not ready')
+    return
+  }
+  editor = window.CodeMirror(editorRef.value, {
+    value: content.value || '',
     mode: 'markdown',
-    theme: 'material-darker',
+    theme: 'default',
     lineNumbers: true,
     lineWrapping: true,
     indentUnit: 2,
@@ -93,6 +130,7 @@ async function loadNote() {
         if (file) {
           content.value = file.content
           showStatus('✓ 笔记加载成功', 'success')
+          if (editor) editor.setValue(content.value)
           return
         }
       } else if (response.status === 404) {
@@ -103,8 +141,9 @@ async function loadNote() {
     }
   }
 
-  content.value = '# ' + problem.value?.title + ' 笔记\n\n## 思路\n\n\n\n## 代码\n\n```java\n\n```\n\n## 总结\n\n'
+  content.value = '# ' + (problem.value?.title || '题目') + ' 笔记\n\n## 思路\n\n\n\n## 代码\n\n```java\n\n```\n\n## 总结\n\n'
   showStatus('✓ 新建笔记', 'success')
+  if (editor) editor.setValue(content.value)
 }
 
 // 保存笔记
@@ -253,6 +292,8 @@ function insertItalic() {
     </div>
 
     <div ref="editorRef" class="editor"></div>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
   </div>
 </template>
 
@@ -369,6 +410,7 @@ function insertItalic() {
 
 .editor {
   flex: 1;
+  min-height: 300px;
   border: 1px solid var(--vp-c-divider);
   border-radius: 8px;
   overflow: hidden;
@@ -379,6 +421,3 @@ function insertItalic() {
   font-family: 'Fira Code', Consolas, monospace;
 }
 </style>
-
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/material-darker.css">
